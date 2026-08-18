@@ -65,6 +65,7 @@ export type ChoreSkip = {
   family_id: string
   chore_id: string
   occurrence_date: string
+  created_at: string
 }
 
 export type FamilyBundle = {

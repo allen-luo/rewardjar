@@ -1,0 +1,14 @@
+-- Optional: schedule check-in pushes every 5 minutes.
+-- Enable the pg_cron and pg_net extensions, then replace PROJECT_REF and CRON_SECRET.
+
+-- select cron.schedule(
+--   'rewardjar-send-reminders',
+--   '*/5 * * * *',
+--   $$
+--   select net.http_post(
+--     url := 'https://PROJECT_REF.supabase.co/functions/v1/send-reminders',
+--     headers := jsonb_build_object('Authorization', 'Bearer CRON_SECRET', 'Content-Type', 'application/json'),
+--     body := '{}'::jsonb
+--   );
+--   $$
+-- );

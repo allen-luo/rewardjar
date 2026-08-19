@@ -54,31 +54,35 @@ Schedule it every 5 minutes (Dashboard → Edge Functions → Schedules, or `pg_
 
 On iPhone, add RewardJar to the Home Screen before enabling notifications.
 
-## Host on Cloudflare Pages
+## Host on Cloudflare
 
-RewardJar is a static Vite PWA. Use **Workers & Pages** on your existing Cloudflare account (not a Worker that runs React). Data stays in Supabase.
+RewardJar is a static Vite PWA. Deploy it as a **Worker with static assets** (Cloudflare’s current default) on your existing account. Data stays in Supabase.
 
-1. In Cloudflare: **Workers & Pages → Create → Pages → Connect to Git**.
-2. Select `allen-luo/rewardjar`. Use branch `cursor/rewardjar-pwa` (or `main` after you merge).
-3. Build settings:
-   - **Framework preset:** Vite
-   - **Build command:** `npm run build`
-   - **Build output directory:** `dist`
-4. Add production environment variables (Settings → Environment variables):
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-   - `VITE_VAPID_PUBLIC_KEY`
-5. Deploy. You’ll get a URL like `https://rewardjar.pages.dev`.
-6. In [Supabase Auth URL config](https://supabase.com/dashboard/project/nndsmcfracnacxzuakfw/auth/url-configuration), set **Site URL** and **Redirect URLs** to that origin (and any custom domain).
-
-SPA routes (`/kids/...`, `/settings`) are covered by [`public/_redirects`](public/_redirects). Optional: attach a domain you already manage in Cloudflare (Pages → Custom domains).
-
-To publish a local build instead of Git:
+### CLI (this repo)
 
 ```bash
 npm run build
-npx wrangler pages deploy dist --project-name rewardjar
+npx wrangler deploy
 ```
+
+That publishes `dist/` to `https://rewardjar.<your-subdomain>.workers.dev`. SPA routes (`/kids/...`, `/settings`) fall back to `index.html`.
+
+Env vars `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, and `VITE_VAPID_PUBLIC_KEY` are baked in at **build** time from `.env`. Rebuild and redeploy after changing them.
+
+After the first deploy, in [Supabase Auth URL config](https://supabase.com/dashboard/project/nndsmcfracnacxzuakfw/auth/url-configuration) set **Site URL** and **Redirect URLs** to the `workers.dev` origin (and any custom domain).
+
+Optional: attach a domain you already manage in Cloudflare (Workers → rewardjar → Settings → Domains & Routes).
+
+### Git-connected Pages (alternative)
+
+This account already has a Pages project (`graydonhousecafe`). Creating a second Pages project via CLI failed here; the Worker deploy above is the supported path. If you later create a Pages project in the dashboard:
+
+1. **Workers & Pages → Create → Pages → Connect to Git**
+2. Select `allen-luo/rewardjar`, branch `cursor/rewardjar-pwa`
+3. Build command `npm run build`, output `dist`
+4. Add the same `VITE_*` variables as production env vars
+
+5. Add `public/_redirects` with `/* /index.html 200` so SPA routes work on Pages
 
 Push reminders still deploy to **Supabase** Edge Functions, not Cloudflare.
 
@@ -87,4 +91,4 @@ Push reminders still deploy to **Supabase** Edge Functions, not Cloudflare.
 - `npm run dev` — local Vite app
 - `npm run build` — production PWA build
 - `npm run preview` — preview the build
-- `npx wrangler pages deploy dist --project-name rewardjar` — upload `dist/` to Cloudflare Pages
+- `npx wrangler deploy` — upload `dist/` to Cloudflare Workers

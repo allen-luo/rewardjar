@@ -6,7 +6,7 @@ A playful PWA for tracking kids’ chores, stamp cards, and money rewards — wi
 
 - **Multiple kids** — each with their own color, avatar, chores, stamp cards, and money jar
 - **Stamp cards** — fill a card to earn a prize; parent marks when the prize is given to start the next card
-- **Money rewards** — pay a configured amount per chore completion
+- **Money rewards** — pay a configured amount per chore completion; the money jar fills with mixed coins you can tap or shake
 - **Due dates & reminders** — one-time or repeating chores with optional check-in push notifications
 - **History** — per-kid timeline of:
   - rewards added or removed (stamps and money)

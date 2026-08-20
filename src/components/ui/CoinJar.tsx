@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion'
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState, type PointerEvent } from 'react'
 import { formatCents, prefersReducedMotion } from '../../lib/format'
 import { playCoin } from '../../lib/sounds'
 import { useJarShake } from '../../hooks/useJarShake'
@@ -67,12 +67,16 @@ export function CoinJar({ cents }: { cents: number }) {
   const coins = useMemo(() => Array.from({ length: count }, (_, i) => layoutCoin(i)), [count])
   const reduced = prefersReducedMotion()
   const [shake, setShake] = useState(0)
+  const settleTimer = useRef<number>(0)
+  const dragStart = useRef<{ x: number; y: number } | null>(null)
   const full = cents > 0 && count >= MAX_COINS
 
   const rattle = () => {
     if (reduced || count === 0) return
     setShake((n) => n + 1)
     void playCoin()
+    window.clearTimeout(settleTimer.current)
+    settleTimer.current = window.setTimeout(() => setShake(0), 480)
   }
 
   const { permissionPending, requestPermission } = useJarShake(rattle, !reduced)
@@ -80,6 +84,23 @@ export function CoinJar({ cents }: { cents: number }) {
   async function onJarActivate() {
     if (permissionPending) await requestPermission()
     rattle()
+  }
+
+  function onPointerDown(event: PointerEvent<HTMLButtonElement>) {
+    dragStart.current = { x: event.clientX, y: event.clientY }
+  }
+
+  function onPointerMove(event: PointerEvent<HTMLButtonElement>) {
+    const start = dragStart.current
+    if (!start) return
+    const dist = Math.hypot(event.clientX - start.x, event.clientY - start.y)
+    if (dist < 18) return
+    dragStart.current = { x: event.clientX, y: event.clientY }
+    rattle()
+  }
+
+  function onPointerUp() {
+    dragStart.current = null
   }
 
   return (
@@ -95,7 +116,11 @@ export function CoinJar({ cents }: { cents: number }) {
       <button
         type="button"
         onClick={() => void onJarActivate()}
-        className="relative mx-auto mt-3 block h-[200px] w-[160px] min-h-0"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        className="relative mx-auto mt-3 block h-[200px] w-[160px] min-h-0 touch-manipulation"
         aria-label="Shake the money jar"
       >
         <JarOutline />
@@ -147,7 +172,7 @@ export function CoinJar({ cents }: { cents: number }) {
       </button>
 
       <p className="mt-2 text-center text-sm font-bold text-ink/50">
-        {permissionPending ? 'Tap the jar, then shake your phone' : 'Tap or shake the jar'}
+        {permissionPending ? 'Tap the jar, then shake your phone' : 'Tap, drag, or shake the jar'}
       </p>
     </div>
   )

@@ -13,6 +13,7 @@ A playful PWA for tracking kids’ chores, stamp cards, and money rewards — wi
   - **chores finished** (scheduled occurrences marked complete)
   - **stamp cards completed** (prize given)
   - skipped days
+- **Stay signed in** — default on; home-screen installs (iPhone and Android) keep the session in IndexedDB and refresh it when you reopen the icon
 
 ## Setup
 
@@ -52,7 +53,7 @@ Set function secrets: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (
 
 Schedule it every 5 minutes (Dashboard → Edge Functions → Schedules, or `pg_cron` + `pg_net` posting to `/functions/v1/send-reminders` with `Authorization: Bearer CRON_SECRET`).
 
-On iPhone, add RewardJar to the Home Screen before enabling notifications.
+On iPhone and Android, add RewardJar to the Home Screen, then **sign in inside the installed app**. Stay signed in is on by default (IndexedDB + refresh when you reopen the icon). Browser tabs and the home-screen icon may not share a session. Chrome on Android can still clear site data if you wipe Chrome storage.
 
 ## Host on Cloudflare
 

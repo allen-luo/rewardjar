@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
+import { requestPersistentStorage, setRememberMe, shouldRememberSession } from '../../lib/authStorage'
+import { isStandalone } from '../../lib/pwa'
 import { isSupabaseConfigured, supabase } from '../../lib/supabase'
 import type { Family, Profile } from '../../lib/types'
 
@@ -9,7 +11,7 @@ type AuthState = {
   profile: Profile | null
   family: Family | null
   configured: boolean
-  signIn: (email: string, password: string) => Promise<string | null>
+  signIn: (email: string, password: string, remember?: boolean) => Promise<string | null>
   signUp: (email: string, password: string, displayName: string) => Promise<string | null>
   signOut: () => Promise<void>
   refreshFamily: () => Promise<void>
@@ -39,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setReady(true)
       return
     }
+    void requestPersistentStorage()
     const loaded = await loadProfile(next.user.id)
     if (loaded) {
       setProfile(loaded.profile)
@@ -58,11 +61,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setReady(true)
       return
     }
-    supabase.auth.getSession().then(({ data }) => hydrate(data.session))
+
+    void supabase.auth.getSession().then(({ data }) => {
+      void hydrate(data.session)
+      void supabase.auth.startAutoRefresh()
+    })
+
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       void hydrate(next)
     })
-    return () => sub.subscription.unsubscribe()
+
+    const onVisible = () => {
+      void supabase.auth.startAutoRefresh()
+      void supabase.auth.getSession().then(({ data }) => hydrate(data.session))
+    }
+    const onHidden = () => {
+      void supabase.auth.stopAutoRefresh()
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') onVisible()
+      else onHidden()
+    }
+    const onPageHide = () => {
+      if (!shouldRememberSession()) void supabase.auth.signOut()
+    }
+
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('focus', onVisible)
+    window.addEventListener('pageshow', onVisible)
+    window.addEventListener('pagehide', onPageHide)
+
+    return () => {
+      sub.subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('focus', onVisible)
+      window.removeEventListener('pageshow', onVisible)
+      window.removeEventListener('pagehide', onPageHide)
+    }
   }, [])
 
   const value = useMemo<AuthState>(
@@ -72,8 +107,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile,
       family,
       configured: isSupabaseConfigured,
-      signIn: async (email, password) => {
+      signIn: async (email, password, remember = true) => {
+        setRememberMe(isStandalone() || remember)
         const { error } = await supabase.auth.signInWithPassword({ email, password })
+        if (!error) void requestPersistentStorage()
         return error?.message ?? null
       },
       signUp: async (email, password, displayName) => {

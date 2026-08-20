@@ -21,7 +21,7 @@ export function useJarShake(onShake: () => void, enabled: boolean) {
       const a = event.accelerationIncludingGravity
       if (!a) return
       const mag = Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0)
-      if (mag < 18) return
+      if (mag < 15) return
       const now = Date.now()
       if (now - lastShake.current < 600) return
       lastShake.current = now

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Button } from '../../components/ui/Button'
+import { isStandalone } from '../../lib/pwa'
 import { useAuth } from './AuthProvider'
 
 export function LoginPage() {
@@ -8,9 +9,11 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
+  const [remember, setRemember] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
+  const standalone = typeof window !== 'undefined' && isStandalone()
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -18,7 +21,7 @@ export function LoginPage() {
     setNotice(null)
     setBusy(true)
     const message =
-      mode === 'in' ? await signIn(email, password) : await signUp(email, password, name || 'Parent')
+      mode === 'in' ? await signIn(email, password, remember) : await signUp(email, password, name || 'Parent')
     setBusy(false)
     if (message) setError(message)
     else if (mode === 'up') setNotice('Check your email if confirmation is required, then sign in.')
@@ -78,6 +81,20 @@ export function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
           />
         </label>
+        {mode === 'in' && (
+          <label className="flex items-center gap-3 font-bold">
+            <input
+              type="checkbox"
+              checked={standalone || remember}
+              disabled={standalone}
+              onChange={(e) => setRemember(e.target.checked)}
+            />
+            Stay signed in
+          </label>
+        )}
+        {standalone && (
+          <p className="text-sm font-bold text-ink/70">This home-screen app keeps you signed in on this phone. Sign in here (not only in the browser) so the session stays on this icon.</p>
+        )}
         {error && <p className="text-sm font-bold text-coral">{error}</p>}
         {notice && <p className="text-sm font-bold text-mint">{notice}</p>}
         <Button type="submit" className="w-full" disabled={busy || !configured}>

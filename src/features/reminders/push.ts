@@ -1,4 +1,7 @@
 import { supabase } from '../../lib/supabase'
+import { isStandalone } from '../../lib/pwa'
+
+export { isStandalone }
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
@@ -7,10 +10,6 @@ function urlBase64ToUint8Array(base64String: string) {
   const output = new Uint8Array(raw.length)
   for (let i = 0; i < raw.length; i++) output[i] = raw.charCodeAt(i)
   return output
-}
-
-export function isStandalone(): boolean {
-  return window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && Boolean((navigator as { standalone?: boolean }).standalone))
 }
 
 export function canUsePush(): boolean {
